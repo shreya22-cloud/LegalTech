@@ -1,0 +1,107 @@
+package org.cloudbus.cloudsim.examples;
+
+import org.cloudbus.cloudsim.*;
+
+import org.cloudbus.cloudsim.core.CloudSim;
+
+import org.cloudbus.cloudsim.provisioners.*;
+
+import java.util.*;
+
+public class mounika {
+
+    public static void main(String[] args) {
+
+        try {
+
+            CloudSim.init(1, Calendar.getInstance(), false);
+
+
+
+            // Datacenter
+
+            List<Pe> pe = List.of(new Pe(0, new PeProvisionerSimple(1000)));
+
+            Host host = new Host(0, new RamProvisionerSimple(2048),
+
+                    new BwProvisionerSimple(10000), 1000000,
+
+                    pe, new VmSchedulerTimeShared(pe));
+
+
+
+            Datacenter dc = new Datacenter("DC",
+
+                    new DatacenterCharacteristics("x86","Linux","Xen",
+
+                            List.of(host),10,3,0.05,0.1,0.1),
+
+                    new VmAllocationPolicySimple(List.of(host)),
+
+                    new LinkedList<>(), 0);
+
+
+
+            // Broker
+
+            DatacenterBroker broker = new DatacenterBroker("Broker");
+
+
+
+            // VM (FCFS using SpaceShared)
+
+            Vm vm = new Vm(0, broker.getId(), 1000, 1, 512, 1000,
+
+                    10000, "Xen", new CloudletSchedulerSpaceShared());
+
+            broker.submitVmList(List.of(vm));
+
+
+
+            // Cloudlets
+
+            UtilizationModel m = new UtilizationModelFull();
+
+            Cloudlet c1 = new Cloudlet(0, 40000, 1, 300, 300, m, m, m);
+
+            Cloudlet c2 = new Cloudlet(1, 10000, 1, 300, 300, m, m, m);
+
+            c1.setUserId(broker.getId());
+
+            c2.setUserId(broker.getId());
+
+
+
+            broker.submitCloudletList(List.of(c1, c2));
+
+
+
+            // Simulation
+
+            CloudSim.startSimulation();
+
+            List<Cloudlet> result = broker.getCloudletReceivedList();
+
+            CloudSim.stopSimulation();
+
+
+
+            // Output
+
+            System.out.println("Cloudlet ID | Status | Finish Time");
+
+            for (Cloudlet c : result)
+
+                System.out.println(c.getCloudletId() + " | SUCCESS | " + c.getFinishTime());
+
+
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+
+    }
+
+}
